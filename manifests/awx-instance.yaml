@@ -1,0 +1,100 @@
+# Namespace for AWX
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: awx
+  labels:
+    name: awx
+---
+# Storage class for hostPath
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: hostpath
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+---
+# PostgreSQL Persistent Volume
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: awx-postgres-pv
+spec:
+  capacity:
+    storage: 8Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: hostpath
+  hostPath:
+    path: /opt/awx/postgres
+    type: DirectoryOrCreate
+---
+# Projects Persistent Volume
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: awx-projects-pv
+spec:
+  capacity:
+    storage: 8Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: hostpath
+  hostPath:
+    path: /opt/awx/projects
+    type: DirectoryOrCreate
+---
+# PostgreSQL Configuration Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: awx-postgres-configuration
+  namespace: awx
+type: Opaque
+stringData:
+  host: awx-instance-postgres-13
+  port: "5432"
+  database: awx
+  username: awx
+  password: awxpassword
+  type: managed
+---
+# Admin Password Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: awx-admin-password
+  namespace: awx
+type: Opaque
+stringData:
+  password: admin123!@#
+---
+# AWX Instance
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: awx-instance
+  namespace: awx
+spec:
+  service_type: ClusterIP
+  hostname: awx.sin.padminisys.com
+  ingress_type: ingress
+  ingress_class_name: nginx
+  ingress_annotations: |
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  ingress_tls_secret: awx-tls
+  postgres_storage_class: hostpath
+  postgres_storage_requirements:
+    requests:
+      storage: 8Gi
+  projects_persistence: true
+  projects_storage_class: hostpath
+  projects_storage_size: 8Gi
+  postgres_configuration_secret: awx-postgres-configuration
+  admin_user: admin
+  admin_password_secret: awx-admin-password

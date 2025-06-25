@@ -1,0 +1,34 @@
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore temporary files
+*.tmp
+/tmp/
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore kubeconfig files (security)
+kubeconfig*
+*.kubeconfig
+
+# Ignore build artifacts
+dist/
+build/
+*.egg-info/
+
+# Ignore Docker build context
+.dockerignore
+
+# Ignore logs
+*.log
+logs/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
