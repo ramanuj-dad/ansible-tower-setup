@@ -52,7 +52,7 @@ jobs:
 
     - name: Prepare kubeconfig
       env:
-        KUBECONFIG_DATA: ${{ secrets.KUBECONFIG }}
+        KUBECONFIG_DATA: ${{ secrets.KUBE_CONFIG }}
       run: |
         # Decode and save the kubeconfig
         echo "$KUBECONFIG_DATA" | base64 -d > /tmp/kubeconfig
