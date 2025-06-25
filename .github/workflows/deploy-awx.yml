@@ -53,11 +53,20 @@ jobs:
         echo "${{ secrets.KUBECONFIG }}" | base64 -d > /tmp/kubeconfig
         chmod 600 /tmp/kubeconfig
 
+    - name: Debug image tags
+      run: |
+        echo "Available image tags:"
+        echo "${{ steps.meta.outputs.tags }}"
+        
     - name: Deploy AWX using containerized script
       run: |
+        # Use the 'latest' tag if on main branch, otherwise use the first available tag
+        TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1 | cut -d ' ' -f 1)
+        echo "Using Docker image: $TAG"
+        
         docker run --rm \
           -v /tmp/kubeconfig:/kubeconfig:ro \
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          $TAG
 
     - name: Verify deployment
       run: |
