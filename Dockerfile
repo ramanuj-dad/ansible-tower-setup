@@ -18,5 +18,39 @@ COPY deploy_awx.py /app/deploy_awx.py
 # Make script executable
 RUN chmod +x /app/deploy_awx.py
 
+# Copy entry script
+COPY <<EOF /app/entrypoint.sh
+#!/bin/bash
+set -e
+
+# Check if kubeconfig exists
+if [ ! -f /kubeconfig ]; then
+  echo "ERROR: /kubeconfig file not found!"
+  echo "Please mount a valid kubeconfig file to /kubeconfig"
+  exit 1
+fi
+
+# Verify kubeconfig is not empty
+if [ ! -s /kubeconfig ]; then
+  echo "ERROR: /kubeconfig file is empty!"
+  exit 1
+fi
+
+# Validate kubeconfig can connect
+export KUBECONFIG=/kubeconfig
+echo "Testing Kubernetes connection..."
+kubectl cluster-info || {
+  echo "ERROR: Failed to connect to Kubernetes cluster with provided kubeconfig"
+  echo "Please check if the kubeconfig file is valid and the cluster is accessible"
+  exit 1
+}
+
+# Run the deployment script
+exec python3 /app/deploy_awx.py
+EOF
+
+# Make entry script executable
+RUN chmod +x /app/entrypoint.sh
+
 # Set entrypoint
-ENTRYPOINT ["python3", "/app/deploy_awx.py"]
+ENTRYPOINT ["/app/entrypoint.sh"]

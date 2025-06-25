@@ -29,6 +29,8 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    # No secret check needed - workflow will fail if KUBECONFIG secret is not set
+      
     - name: Extract metadata
       id: meta
       uses: docker/metadata-action@v5
@@ -49,9 +51,28 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
 
     - name: Prepare kubeconfig
+      env:
+        KUBECONFIG_DATA: ${{ secrets.KUBECONFIG }}
       run: |
-        echo "${{ secrets.KUBECONFIG }}" | base64 -d > /tmp/kubeconfig
+        # Decode and save the kubeconfig
+        echo "$KUBECONFIG_DATA" | base64 -d > /tmp/kubeconfig
         chmod 600 /tmp/kubeconfig
+        
+        # Validate the kubeconfig file
+        echo "Validating kubeconfig..."
+        if [ ! -s /tmp/kubeconfig ]; then
+          echo "ERROR: kubeconfig file is empty!"
+          exit 1
+        fi
+        
+        # Check if it's a valid YAML file
+        python3 -c "import yaml; yaml.safe_load(open('/tmp/kubeconfig'))" || { echo "ERROR: kubeconfig is not valid YAML!"; exit 1; }
+        
+        # Check if kubeconfig contains basic required fields
+        grep -q "apiVersion:" /tmp/kubeconfig || { echo "ERROR: kubeconfig missing apiVersion field!"; exit 1; }
+        grep -q "clusters:" /tmp/kubeconfig || { echo "ERROR: kubeconfig missing clusters section!"; exit 1; }
+        grep -q "server:" /tmp/kubeconfig || { echo "ERROR: kubeconfig missing server URL!"; exit 1; }
+        echo "Kubeconfig validation passed."
 
     - name: Debug image tags
       run: |
@@ -64,13 +85,25 @@ jobs:
         TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1 | cut -d ' ' -f 1)
         echo "Using Docker image: $TAG"
         
+        # Debug the kubeconfig content (excluding sensitive data)
+        echo "Checking kubeconfig file exists and has content"
+        ls -la /tmp/kubeconfig
+        echo "File size: $(stat -c%s /tmp/kubeconfig) bytes"
+        grep -i "server:" /tmp/kubeconfig || echo "No server entry found in kubeconfig"
+        
+        # Run the container with kubeconfig properly mounted
         docker run --rm \
           -v /tmp/kubeconfig:/kubeconfig:ro \
+          -e KUBECONFIG=/kubeconfig \
           $TAG
 
     - name: Verify deployment
       run: |
+        # Ensure kubeconfig is valid
         export KUBECONFIG=/tmp/kubeconfig
+        echo "Testing kubectl connection before verification"
+        kubectl cluster-info || { echo "Kubernetes cluster connection failed"; exit 1; }
+        
         echo "Checking AWX deployment status..."
         kubectl get awx -n awx
         kubectl get pods -n awx
@@ -93,6 +126,9 @@ jobs:
         echo "=========================="
         echo "URL: https://awx.sin.padminisys.com"
         echo "Username: admin"
+        
+        # Verify kubectl connectivity
+        kubectl cluster-info || { echo "WARNING: Unable to connect to Kubernetes cluster"; }
         
         # Try to get the admin password
         if kubectl get secret awx-admin-password -n awx >/dev/null 2>&1; then
