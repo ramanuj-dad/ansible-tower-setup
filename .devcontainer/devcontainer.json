@@ -1,0 +1,25 @@
+{
+  "name": "AWX Deployer",
+  "dockerFile": "../Dockerfile",
+  "context": "..",
+  "mounts": [
+    "source=${localEnv:HOME}/.kube/config,target=/kubeconfig,type=bind,consistency=cached"
+  ],
+  "postCreateCommand": "echo 'AWX Deployer Dev Container Ready!'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go"
+      ],
+      "settings": {
+        "go.gopath": "/go",
+        "go.goroot": "/usr/local/go"
+      }
+    }
+  },
+  "forwardPorts": [],
+  "runArgs": [
+    "--env", "KUBECONFIG=/kubeconfig"
+  ],
+  "workspaceFolder": "/app"
+}
