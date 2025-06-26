@@ -1,22 +1,38 @@
-FROM python:3.11-slim
+# Use the official Ubuntu image as base
+FROM ubuntu:22.04
 
-# Install kubectl and git (needed for kustomize)
-RUN apt-get update && \
-    apt-get install -y curl git && \
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
-    chmod +x kubectl && \
-    mv kubectl /usr/local/bin/ && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Install required packages
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Install kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+    && chmod +x kubectl \
+    && mv kubectl /usr/local/bin/
+
+# Install Go
+RUN curl -LO https://golang.org/dl/go1.21.5.linux-amd64.tar.gz \
+    && tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz \
+    && rm go1.21.5.linux-amd64.tar.gz
+
+# Set Go environment
+ENV PATH=$PATH:/usr/local/go/bin
+ENV GOPATH=/go
+ENV PATH=$PATH:$GOPATH/bin
+
+# Set the working directory
 WORKDIR /app
 
-# Copy deployment script
-COPY deploy_awx.py /app/deploy_awx.py
+# Copy Go source files
+COPY *.go go.mod ./
 
-# Make script executable
-RUN chmod +x /app/deploy_awx.py
+# Build the Go application
+RUN go build -o awx-deployer .
+
+# Copy manifests file
+COPY manifests.yaml ./
 
 # Copy entry script
 COPY <<EOF /app/entrypoint.sh
@@ -45,12 +61,15 @@ kubectl cluster-info || {
   exit 1
 }
 
-# Run the deployment script
-exec python3 /app/deploy_awx.py
+# Run the deployment
+exec ./awx-deployer
 EOF
 
 # Make entry script executable
 RUN chmod +x /app/entrypoint.sh
+
+# Set default kubeconfig path
+ENV KUBECONFIG=/kubeconfig
 
 # Set entrypoint
 ENTRYPOINT ["/app/entrypoint.sh"]

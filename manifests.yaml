@@ -1,3 +1,7 @@
+# AWX Deployment Manifests
+# This file contains all Kubernetes manifests needed for AWX deployment
+
+---
 # Namespace for AWX
 apiVersion: v1
 kind: Namespace
@@ -5,6 +9,7 @@ metadata:
   name: awx
   labels:
     name: awx
+
 ---
 # Storage class for hostPath
 apiVersion: storage.k8s.io/v1
@@ -14,6 +19,7 @@ metadata:
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true
+
 ---
 # PostgreSQL Persistent Volume
 apiVersion: v1
@@ -30,6 +36,7 @@ spec:
   hostPath:
     path: /opt/awx/postgres
     type: DirectoryOrCreate
+
 ---
 # Projects Persistent Volume
 apiVersion: v1
@@ -46,6 +53,7 @@ spec:
   hostPath:
     path: /opt/awx/projects
     type: DirectoryOrCreate
+
 ---
 # PostgreSQL Configuration Secret
 apiVersion: v1
@@ -61,6 +69,7 @@ stringData:
   username: awx
   password: awxpassword
   type: managed
+
 ---
 # Admin Password Secret
 apiVersion: v1
@@ -71,6 +80,7 @@ metadata:
 type: Opaque
 stringData:
   password: admin123!@#
+
 ---
 # AWX Instance
 apiVersion: awx.ansible.com/v1beta1

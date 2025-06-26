@@ -1,34 +1,41 @@
-# Ignore Python cache files
-__pycache__/
-*.py[cod]
-*$py.class
+# Go build artifacts
+awx-deployer
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 
-# Ignore temporary files
+# Go test artifacts
+*.test
+*.out
+
+# Go mod cache
+go.sum
+
+# Temporary files
 *.tmp
 /tmp/
 
-# Ignore IDE files
+# IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Ignore kubeconfig files (security)
+# Kubeconfig files (security)
 kubeconfig*
 *.kubeconfig
 
-# Ignore build artifacts
-dist/
-build/
-*.egg-info/
+# Environment files with secrets
+.env
+*.env
+!env.example
 
-# Ignore Docker build context
-.dockerignore
-
-# Ignore logs
+# Logs
 *.log
 logs/
 
-# Ignore OS files
+# OS files
 .DS_Store
 Thumbs.db
