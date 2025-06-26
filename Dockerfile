@@ -25,11 +25,15 @@ ENV PATH=$PATH:$GOPATH/bin
 # Set the working directory
 WORKDIR /app
 
-# Copy Go source files
-COPY *.go go.mod ./
+# Copy Go module files
+COPY go.mod ./
+
+# Copy source code
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
 
 # Build the Go application
-RUN go build -o awx-deployer .
+RUN go build -o awx-deployer ./cmd/awx-deployer
 
 # Copy manifests file
 COPY manifests.yaml ./
