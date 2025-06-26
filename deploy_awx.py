@@ -237,25 +237,36 @@ class AWXDeployer:
         if self.resource_exists(
             "deployment",
             "awx-operator-controller-manager",
-            "awx-system"
+            "awx"
         ):
             logger.info("AWX Operator already installed, skipping")
             return
             
-        # Apply AWX Operator
-        operator_url = (
-            "https://raw.githubusercontent.com/ansible/awx-operator/"
-            "devel/deploy/awx-operator.yaml"
+        # Apply AWX Operator using the new Kustomize method
+        # This uses the stable tag instead of the deprecated raw YAML URL
+        logger.info("Installing AWX Operator using Kustomize...")
+        operator_kustomize_url = (
+            "github.com/ansible/awx-operator/config/default"
+            "?ref=2.19.1"
         )
-        result = self.run_kubectl(f"apply -f {operator_url}")
+        result = self.run_kubectl(f"apply -k {operator_kustomize_url}")
         if result.returncode != 0:
-            raise Exception(f"Failed to install AWX Operator: {result.stderr}")
+            # Fallback to latest stable release if specific version fails
+            logger.warning("Specific version failed, trying latest stable...")
+            fallback_url = (
+                "github.com/ansible/awx-operator/config/default?ref=2.19.1"
+            )
+            result = self.run_kubectl(f"apply -k {fallback_url}")
+            if result.returncode != 0:
+                raise Exception(
+                    f"Failed to install AWX Operator: {result.stderr}"
+                )
         
         # Wait for operator to be ready
         logger.info("Waiting for AWX Operator to be ready")
         if not self.wait_for_deployment(
             "awx-operator-controller-manager",
-            "awx-system"
+            "awx"
         ):
             raise Exception("AWX Operator deployment failed")
             

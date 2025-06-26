@@ -20,12 +20,12 @@ echo "Testing cluster access..."
 kubectl cluster-info
 
 # Install AWX Operator
-echo "Installing AWX Operator..."
-kubectl apply -f https://raw.githubusercontent.com/ansible/awx-operator/devel/deploy/awx-operator.yaml
+echo "Installing AWX Operator using Kustomize..."
+kubectl apply -k github.com/ansible/awx-operator/config/default?ref=2.19.1
 
 # Wait for operator to be ready
 echo "Waiting for AWX Operator to be ready..."
-kubectl wait --for=condition=available --timeout=300s deployment/awx-operator-controller-manager -n awx-system
+kubectl wait --for=condition=available --timeout=300s deployment/awx-operator-controller-manager -n awx
 
 # Apply AWX instance and dependencies
 echo "Applying AWX manifests..."
