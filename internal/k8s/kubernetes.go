@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"strings"
 )
 
@@ -136,19 +135,4 @@ func (k *KubernetesClient) GetIngressStatus(ctx context.Context, ingressName, na
 	}
 
 	return strings.TrimSpace(string(output)), nil
-}
-
-// CreateTempFile creates a temporary file with the given content
-func (k *KubernetesClient) CreateTempFile(content, filename string) (string, error) {
-	tempDir := "/tmp"
-	tempFile := filepath.Join(tempDir, filename)
-
-	cmd := exec.Command("sh", "-c", fmt.Sprintf("cat > %s", tempFile))
-	cmd.Stdin = strings.NewReader(content)
-
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to create temp file: %v", err)
-	}
-
-	return tempFile, nil
 }

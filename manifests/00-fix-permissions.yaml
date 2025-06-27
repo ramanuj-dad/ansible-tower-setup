@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: awx-fix-permissions
+  namespace: awx
+spec:
+  template:
+    metadata:
+      name: awx-fix-permissions
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+      containers:
+      - name: fix-permissions
+        image: busybox:1.35
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
+          privileged: true
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Creating AWX directories and setting permissions..."
+          mkdir -p /opt/awx/postgres /opt/awx/projects
+          chown -R 26:26 /opt/awx/postgres
+          chown -R 1000:1000 /opt/awx/projects
+          chmod 755 /opt/awx/postgres /opt/awx/projects
+          echo "Permissions fixed successfully"
+          ls -la /opt/awx/
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /opt/awx/postgres
+        - name: projects-data
+          mountPath: /opt/awx/projects
+      volumes:
+      - name: postgres-data
+        hostPath:
+          path: /opt/awx/postgres
+          type: DirectoryOrCreate
+      - name: projects-data
+        hostPath:
+          path: /opt/awx/projects
+          type: DirectoryOrCreate

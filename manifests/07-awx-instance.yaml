@@ -1,0 +1,50 @@
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: awx-instance
+  namespace: awx
+spec:
+  service_type: ClusterIP
+  hostname: awx.sin.padminisys.com
+  ingress_type: ingress
+  ingress_class_name: nginx
+  ingress_annotations: |
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  ingress_tls_secret: awx-tls
+  
+  # PostgreSQL configuration
+  postgres_storage_class: hostpath
+  postgres_storage_requirements:
+    requests:
+      storage: 8Gi
+  postgres_configuration_secret: awx-postgres-configuration
+  
+  # Projects persistence
+  projects_persistence: true
+  projects_storage_class: hostpath
+  projects_storage_size: 8Gi
+  
+  # Admin configuration
+  admin_user: admin
+  admin_password_secret: awx-admin-password
+  
+  # PostgreSQL specific settings to fix permission issues
+  postgres_security_context:
+    runAsUser: 26
+    runAsGroup: 26
+    fsGroup: 26
+    fsGroupChangePolicy: "OnRootMismatch"
+  
+  # Additional PostgreSQL configuration
+  postgres_resource_requirements:
+    requests:
+      cpu: "0.5"
+      memory: "2Gi"
+    limits:
+      cpu: "1"
+      memory: "4Gi"
+  
+  # Ensure proper PostgreSQL data directory permissions
+  postgres_data_path: "/var/lib/pgsql/data/userdata"

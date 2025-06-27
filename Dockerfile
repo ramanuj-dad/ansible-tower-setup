@@ -31,12 +31,10 @@ COPY go.mod ./
 # Copy source code
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
+COPY manifests/ ./manifests/
 
 # Build the Go application
 RUN go build -o awx-deployer ./cmd/awx-deployer
-
-# Copy manifests file
-COPY manifests.yaml ./
 
 # Copy entry script
 COPY <<EOF /app/entrypoint.sh
