@@ -24,7 +24,7 @@ func NewOperatorInstaller(k8sClient *k8s.KubernetesClient, config *config.Config
 	}
 }
 
-// Install installs the AWX operator using Kustomize
+// Install installs the AWX operator using the manifest file
 func (o *OperatorInstaller) Install(ctx context.Context) error {
 	log.Println("Installing AWX Operator...")
 
@@ -39,17 +39,11 @@ func (o *OperatorInstaller) Install(ctx context.Context) error {
 		return nil
 	}
 
-	// Install operator using Kustomize
-	kustomizeURL := fmt.Sprintf("github.com/ansible/awx-operator/config/default?ref=%s", o.config.OperatorVersion)
-	log.Printf("Installing AWX Operator version %s...", o.config.OperatorVersion)
-
-	if err := o.k8sClient.ApplyKustomize(ctx, kustomizeURL); err != nil {
-		// Try fallback version if specific version fails
-		log.Printf("Specific version failed, trying fallback version %s...", o.config.OperatorVersion)
-		fallbackURL := fmt.Sprintf("github.com/ansible/awx-operator/config/default?ref=%s", o.config.OperatorVersion)
-		if err := o.k8sClient.ApplyKustomize(ctx, fallbackURL); err != nil {
-			return fmt.Errorf("failed to install AWX operator: %v", err)
-		}
+	// Install operator using the manifest file
+	log.Printf("Installing AWX Operator from manifest...")
+	manifestPath := "manifests/awx-operator.yaml"
+	if err := o.k8sClient.Apply(ctx, manifestPath); err != nil {
+		return fmt.Errorf("failed to install AWX operator from manifest: %v", err)
 	}
 
 	log.Println("Waiting for AWX Operator to be ready...")
