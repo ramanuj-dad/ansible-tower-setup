@@ -68,7 +68,7 @@ func (d *DeploymentWaiter) waitForAWXInstance(ctx context.Context) error {
 		case <-ctx.Done():
 			return fmt.Errorf("timeout waiting for AWX instance")
 		case <-ticker.C:
-			exists, err := d.k8sClient.ResourceExists(ctx, "awx", d.config.AWXName, d.config.Namespace)
+			exists, err := d.k8sClient.ResourceExists(ctx, "awx.ansible.com", "v1beta1", "awxs", d.config.AWXName, d.config.Namespace)
 			if err != nil {
 				log.Printf("Warning: Could not check AWX instance: %v", err)
 				continue
@@ -89,7 +89,7 @@ func (d *DeploymentWaiter) waitForPostgreSQL(ctx context.Context) error {
 	log.Println("Waiting for PostgreSQL to be ready...")
 
 	// Expected PostgreSQL deployment name based on AWX instance name
-	postgresDeployment := fmt.Sprintf("%s-postgres-13", d.config.AWXName)
+	postgresDeployment := fmt.Sprintf("%s-postgres-15", d.config.AWXName)
 
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()

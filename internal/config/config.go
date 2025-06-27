@@ -59,7 +59,7 @@ func NewConfigFromEnv() (*Config, error) {
 		ProjectsStorage: getEnvOrDefault("AWX_PROJECTS_STORAGE", "8Gi"),
 
 		// PostgreSQL settings
-		PostgresHost:     getEnvOrDefault("AWX_POSTGRES_HOST", "awx-instance-postgres-13"),
+		PostgresHost:     getEnvOrDefault("AWX_POSTGRES_HOST", "awx-instance-postgres-15"),
 		PostgresDatabase: getEnvOrDefault("AWX_POSTGRES_DATABASE", "awx"),
 		PostgresUsername: getEnvOrDefault("AWX_POSTGRES_USERNAME", "awx"),
 		PostgresPassword: getEnvOrDefault("AWX_POSTGRES_PASSWORD", "awxpassword"),

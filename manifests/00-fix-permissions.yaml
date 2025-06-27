@@ -24,21 +24,21 @@ spec:
         - -c
         - |
           echo "Creating AWX directories and setting permissions..."
-          mkdir -p /opt/awx/postgres /opt/awx/projects
-          chown -R 26:26 /opt/awx/postgres
+          mkdir -p /var/lib/pgsql/data/userdata /opt/awx/projects
+          chown -R 26:26 /var/lib/pgsql/data/userdata
           chown -R 1000:1000 /opt/awx/projects
-          chmod 755 /opt/awx/postgres /opt/awx/projects
+          chmod 755 /var/lib/pgsql/data/userdata /opt/awx/projects
           echo "Permissions fixed successfully"
-          ls -la /opt/awx/
+          ls -la /var/lib/pgsql/data/
         volumeMounts:
         - name: postgres-data
-          mountPath: /opt/awx/postgres
+          mountPath: /var/lib/pgsql/data/userdata
         - name: projects-data
           mountPath: /opt/awx/projects
       volumes:
       - name: postgres-data
         hostPath:
-          path: /opt/awx/postgres
+          path: /var/lib/pgsql/data/userdata
           type: DirectoryOrCreate
       - name: projects-data
         hostPath:
