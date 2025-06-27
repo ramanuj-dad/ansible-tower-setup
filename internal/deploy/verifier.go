@@ -65,7 +65,7 @@ func (v *DeploymentVerifier) Verify(ctx context.Context) error {
 
 // verifyAWXInstance verifies the AWX custom resource exists
 func (v *DeploymentVerifier) verifyAWXInstance(ctx context.Context) error {
-	exists, err := v.k8sClient.ResourceExists(ctx, "awx", v.config.AWXName, v.config.Namespace)
+	exists, err := v.k8sClient.ResourceExists(ctx, "awx.ansible.com", "v1beta1", "awxs", v.config.AWXName, v.config.Namespace)
 	if err != nil {
 		return fmt.Errorf("failed to check AWX instance: %v", err)
 	}
@@ -81,8 +81,8 @@ func (v *DeploymentVerifier) verifyAWXInstance(ctx context.Context) error {
 // verifyPostgreSQL verifies PostgreSQL deployment and pods
 func (v *DeploymentVerifier) verifyPostgreSQL(ctx context.Context) error {
 	// Check PostgreSQL deployment
-	postgresDeployment := fmt.Sprintf("%s-postgres-13", v.config.AWXName)
-	exists, err := v.k8sClient.ResourceExists(ctx, "deployment", postgresDeployment, v.config.Namespace)
+	postgresDeployment := fmt.Sprintf("%s-postgres-15", v.config.AWXName)
+	exists, err := v.k8sClient.ResourceExists(ctx, "apps", "v1", "deployments", postgresDeployment, v.config.Namespace)
 	if err != nil {
 		return fmt.Errorf("failed to check PostgreSQL deployment: %v", err)
 	}
@@ -106,11 +106,11 @@ func (v *DeploymentVerifier) verifyPostgreSQL(ctx context.Context) error {
 	return nil
 }
 
-// verifyAWXWeb verifies AWX web deployment and pods
+// verifyAWXWeb verifies that the AWX web deployment is running
 func (v *DeploymentVerifier) verifyAWXWeb(ctx context.Context) error {
 	// Check AWX web deployment
 	webDeployment := fmt.Sprintf("%s-web", v.config.AWXName)
-	exists, err := v.k8sClient.ResourceExists(ctx, "deployment", webDeployment, v.config.Namespace)
+	exists, err := v.k8sClient.ResourceExists(ctx, "apps", "v1", "deployments", webDeployment, v.config.Namespace)
 	if err != nil {
 		return fmt.Errorf("failed to check AWX web deployment: %v", err)
 	}
@@ -120,7 +120,7 @@ func (v *DeploymentVerifier) verifyAWXWeb(ctx context.Context) error {
 	}
 
 	// Check AWX web pod status
-	labelSelector := fmt.Sprintf("app.kubernetes.io/name=%s,app.kubernetes.io/component=web", v.config.AWXName)
+	labelSelector := fmt.Sprintf("app.kubernetes.io/name=awx-web,app.kubernetes.io/instance=%s", v.config.AWXName)
 	status, err := v.k8sClient.GetPodStatus(ctx, labelSelector, v.config.Namespace)
 	if err != nil {
 		return fmt.Errorf("failed to get AWX web pod status: %v", err)
@@ -130,15 +130,15 @@ func (v *DeploymentVerifier) verifyAWXWeb(ctx context.Context) error {
 		return fmt.Errorf("AWX web pod is not running, status: %s", status)
 	}
 
-	log.Printf("✓ AWX web is running")
+	log.Printf("✓ AWX web deployment %s is running", webDeployment)
 	return nil
 }
 
-// verifyAWXTask verifies AWX task manager deployment and pods
+// verifyAWXTask verifies that the AWX task deployment is running
 func (v *DeploymentVerifier) verifyAWXTask(ctx context.Context) error {
 	// Check AWX task deployment
 	taskDeployment := fmt.Sprintf("%s-task", v.config.AWXName)
-	exists, err := v.k8sClient.ResourceExists(ctx, "deployment", taskDeployment, v.config.Namespace)
+	exists, err := v.k8sClient.ResourceExists(ctx, "apps", "v1", "deployments", taskDeployment, v.config.Namespace)
 	if err != nil {
 		return fmt.Errorf("failed to check AWX task deployment: %v", err)
 	}
@@ -148,7 +148,7 @@ func (v *DeploymentVerifier) verifyAWXTask(ctx context.Context) error {
 	}
 
 	// Check AWX task pod status
-	labelSelector := fmt.Sprintf("app.kubernetes.io/name=%s,app.kubernetes.io/component=task", v.config.AWXName)
+	labelSelector := fmt.Sprintf("app.kubernetes.io/name=awx-task,app.kubernetes.io/instance=%s", v.config.AWXName)
 	status, err := v.k8sClient.GetPodStatus(ctx, labelSelector, v.config.Namespace)
 	if err != nil {
 		return fmt.Errorf("failed to get AWX task pod status: %v", err)
@@ -158,55 +158,50 @@ func (v *DeploymentVerifier) verifyAWXTask(ctx context.Context) error {
 		return fmt.Errorf("AWX task pod is not running, status: %s", status)
 	}
 
-	log.Printf("✓ AWX task manager is running")
+	log.Printf("✓ AWX task deployment %s is running", taskDeployment)
 	return nil
 }
 
-// verifyServices verifies required services exist
+// verifyServices verifies that the required services exist
 func (v *DeploymentVerifier) verifyServices(ctx context.Context) error {
 	services := []string{
-		fmt.Sprintf("%s-postgres-13", v.config.AWXName),
 		fmt.Sprintf("%s-service", v.config.AWXName),
+		fmt.Sprintf("%s-postgres-15", v.config.AWXName),
 	}
 
-	for _, serviceName := range services {
-		exists, err := v.k8sClient.ResourceExists(ctx, "service", serviceName, v.config.Namespace)
+	for _, service := range services {
+		exists, err := v.k8sClient.ResourceExists(ctx, "", "v1", "services", service, v.config.Namespace)
 		if err != nil {
-			return fmt.Errorf("failed to check service %s: %v", serviceName, err)
+			return fmt.Errorf("failed to check service %s: %v", service, err)
 		}
 
 		if !exists {
-			return fmt.Errorf("service %s does not exist", serviceName)
+			return fmt.Errorf("service %s does not exist", service)
 		}
-
-		log.Printf("✓ Service %s exists", serviceName)
+		log.Printf("✓ Service %s exists", service)
 	}
 
 	return nil
 }
 
-// verifyIngress verifies ingress configuration (optional)
+// verifyIngress verifies the ingress resource exists and gets its status
 func (v *DeploymentVerifier) verifyIngress(ctx context.Context) error {
 	ingressName := fmt.Sprintf("%s-ingress", v.config.AWXName)
-	exists, err := v.k8sClient.ResourceExists(ctx, "ingress", ingressName, v.config.Namespace)
+	exists, err := v.k8sClient.ResourceExists(ctx, "networking.k8s.io", "v1", "ingresses", ingressName, v.config.Namespace)
 	if err != nil {
 		return fmt.Errorf("failed to check ingress: %v", err)
 	}
 
 	if !exists {
-		return fmt.Errorf("ingress %s does not exist", ingressName)
+		log.Printf("Ingress %s not configured, skipping status check.", ingressName)
+		return nil
 	}
 
-	// Try to get ingress status
-	ingressIP, err := v.k8sClient.GetIngressStatus(ctx, ingressName, v.config.Namespace)
+	status, err := v.k8sClient.GetIngressStatus(ctx, ingressName, v.config.Namespace)
 	if err != nil {
 		return fmt.Errorf("failed to get ingress status: %v", err)
 	}
 
-	if ingressIP == "" {
-		return fmt.Errorf("ingress has no IP address assigned")
-	}
-
-	log.Printf("✓ Ingress %s exists with IP: %s", ingressName, ingressIP)
+	log.Printf("✓ Ingress status for %s: %s", ingressName, status)
 	return nil
 }

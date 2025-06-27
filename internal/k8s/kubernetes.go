@@ -212,3 +212,17 @@ func (k *KubernetesClient) GetPodStatus(ctx context.Context, labelSelector, name
 	// For simplicity, returning the phase of the first pod.
 	return string(pods.Items[0].Status.Phase), nil
 }
+
+// GetIngressStatus gets the status of an ingress
+func (k *KubernetesClient) GetIngressStatus(ctx context.Context, ingressName, namespace string) (string, error) {
+	ingress, err := k.clientset.NetworkingV1().Ingresses(namespace).Get(ctx, ingressName, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get ingress %s: %v", ingressName, err)
+	}
+
+	if len(ingress.Status.LoadBalancer.Ingress) > 0 {
+		return ingress.Status.LoadBalancer.Ingress[0].Hostname, nil
+	}
+
+	return "Pending", nil
+}

@@ -99,10 +99,10 @@ func (d *DeploymentWaiter) waitForPostgreSQL(ctx context.Context) error {
 		case <-ctx.Done():
 			return fmt.Errorf("timeout waiting for PostgreSQL")
 		case <-ticker.C:
-			// Check if PostgreSQL deployment exists
-			exists, err := d.k8sClient.ResourceExists(ctx, "deployment", postgresDeployment, d.config.Namespace)
+			log.Printf("Checking for deployment %s...", postgresDeployment)
+			exists, err := d.k8sClient.ResourceExists(ctx, "apps", "v1", "deployments", postgresDeployment, d.config.Namespace)
 			if err != nil {
-				log.Printf("Warning: Could not check PostgreSQL deployment: %v", err)
+				log.Printf("Warning: Could not check for PostgreSQL deployment: %v", err)
 				continue
 			}
 
@@ -145,7 +145,7 @@ func (d *DeploymentWaiter) waitForAWXWeb(ctx context.Context) error {
 			return fmt.Errorf("timeout waiting for AWX web")
 		case <-ticker.C:
 			// Check if web deployment exists
-			exists, err := d.k8sClient.ResourceExists(ctx, "deployment", webDeployment, d.config.Namespace)
+			exists, err := d.k8sClient.ResourceExists(ctx, "apps", "v1", "deployments", webDeployment, d.config.Namespace)
 			if err != nil {
 				log.Printf("Warning: Could not check AWX web deployment: %v", err)
 				continue
@@ -174,7 +174,7 @@ func (d *DeploymentWaiter) waitForAWXWeb(ctx context.Context) error {
 	}
 }
 
-// waitForAWXTask waits for AWX task manager to be ready
+// waitForAWXTask waits for the AWX task manager to be ready
 func (d *DeploymentWaiter) waitForAWXTask(ctx context.Context) error {
 	log.Println("Waiting for AWX task manager to be ready...")
 
@@ -190,7 +190,7 @@ func (d *DeploymentWaiter) waitForAWXTask(ctx context.Context) error {
 			return fmt.Errorf("timeout waiting for AWX task manager")
 		case <-ticker.C:
 			// Check if task deployment exists
-			exists, err := d.k8sClient.ResourceExists(ctx, "deployment", taskDeployment, d.config.Namespace)
+			exists, err := d.k8sClient.ResourceExists(ctx, "apps", "v1", "deployments", taskDeployment, d.config.Namespace)
 			if err != nil {
 				log.Printf("Warning: Could not check AWX task deployment: %v", err)
 				continue

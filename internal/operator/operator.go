@@ -29,7 +29,7 @@ func (o *OperatorInstaller) Install(ctx context.Context) error {
 	log.Println("Installing AWX Operator...")
 
 	// Check if operator is already installed
-	exists, err := o.k8sClient.ResourceExists(ctx, "deployment", "awx-operator-controller-manager", o.config.Namespace)
+	exists, err := o.k8sClient.ResourceExists(ctx, "apps", "v1", "deployments", "awx-operator-controller-manager", o.config.Namespace)
 	if err != nil {
 		return fmt.Errorf("failed to check if operator exists: %v", err)
 	}
