@@ -10,9 +10,6 @@ awx-deployer
 *.test
 *.out
 
-# Go mod cache
-go.sum
-
 # Temporary files
 *.tmp
 /tmp/
