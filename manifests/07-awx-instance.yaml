@@ -30,13 +30,6 @@ spec:
   admin_user: admin
   admin_password_secret: awx-admin-password
   
-  # PostgreSQL specific settings to fix permission issues
-  postgres_security_context:
-    runAsUser: 26
-    runAsGroup: 26
-    fsGroup: 26
-    fsGroupChangePolicy: "OnRootMismatch"
-  
   # Additional PostgreSQL configuration
   postgres_resource_requirements:
     requests:
@@ -45,6 +38,3 @@ spec:
     limits:
       cpu: "1"
       memory: "4Gi"
-  
-  # Ensure proper PostgreSQL data directory permissions
-  postgres_data_path: "/var/lib/pgsql/data/userdata"
